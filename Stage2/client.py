@@ -69,8 +69,6 @@ def toggle_fullscreen():
 def render_screen(game_state):
     SCREEN.blit(BACKGROUND, (0, 0))  # clear screen
 
-    print game_state
-
     for ship in game_state['ships']:
         render_ship(ship)
         for shot in ship['shots']:
