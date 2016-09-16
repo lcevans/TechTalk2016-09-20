@@ -1,0 +1,33 @@
+# Sample protocol
+
+game_state = {
+  "ships" : [
+    {
+      "id" : "Lightning",
+      "x" : 123.0,
+      "y" : 145.0,
+      "v_x" : 123.4,
+      "v_y" : 123.4,
+      "ang" : 12.3,
+      "shots" : [
+        {
+          "x" : 123.4,
+          "y" : 123.4,
+          "v_x" : 123.4,
+          "v_y" : 123.4,
+        }
+        .
+        .
+        .
+      ]
+    },
+    .
+    .
+    .
+  ]
+}
+
+event = {
+  "id" : "Lightning"
+  "type" : "left"
+}
