@@ -1,12 +1,9 @@
-# Server for PewPewPew
+# Simple Chat Server
+# Modified from http://www.binarytides.com/code-chat-application-server-client-sockets-python/
+# Provides skeleton for the later stages.
 
 import socket, select
-import json
-import time
-import math
 import argparse
-import random
-
 
 # List to keep track of socket descriptors
 SOCKET_LIST = []
