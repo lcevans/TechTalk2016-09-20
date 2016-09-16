@@ -9,6 +9,7 @@ import random
 
 import utils
 from constants import *
+from game_logic import add_new_ship, remove_ship, update_positions
 
 # Prettify serialized JSON
 class PrettyFloat(float):
@@ -33,30 +34,11 @@ game_state = {
     'ships': []
 }
 
-def reset_ship(ship):
-    ship['x'] = random.random() * WIDTH
-    ship['y'] = random.random() * HEIGHT
-    ship['v_x'] = 0
-    ship['v_y'] = 0
-    ship['ang'] = random.random() * 2 * math.pi
-    ship['shots'] = []
 
-def add_new_ship(fd):
-    # Add in random location
-    ship = {
-        'id': fd
-    }
-    reset_ship(ship)
-    game_state['ships'].append(ship)
-
-def remove_ship(fd):
+def remove_client(id):
     print "Client %s going offline" % fd
-    for ship in game_state['ships']:
-        if ship['id'] == fd:
-            game_state['ships'].remove(ship)
-
     for sock in SOCKET_LIST:
-        if sock.fileno() == fd:
+        if sock.fileno() == id:
             sock.close()
             SOCKET_LIST.remove(sock)
 
@@ -68,30 +50,9 @@ def broadcast_game_state():
                 socket.send(json.dumps(pretty_floats(game_state)) + '\n')
             except :
                 # Broken connection.
-                remove_ship(sock.fileno())
+                remove_ship(game_state, sock.fileno())
+                remove_client(sock.fileno())
 
-def update_positions(time_delta):
-    # update ship position
-    for ship in game_state['ships']:
-        ship['x'] += ship['v_x'] * time_delta
-	ship['x'] %= WIDTH
-        ship['y'] += ship['v_y'] * time_delta
-	ship['y'] %= HEIGHT
-
-        # update shot position
-        for shot in ship['shots']:
-            shot['x'] += shot['v_x'] * time_delta
-	    shot['x'] %= WIDTH
-            shot['y'] += shot['v_y'] * time_delta
-	    shot['y'] %= HEIGHT
-
-            # check for shot hits
-            for other_ship in game_state['ships']:
-                if other_ship != ship:
-                    delta_x = math.fabs(shot['x'] - other_ship['x'])
-                    delta_y = math.fabs(shot['y'] - other_ship['y'])
-                    if delta_x < 15 and delta_y < 15:
-                        reset_ship(other_ship)
 
 def handle_client_event(fd, event):
     for ship in game_state['ships']:
@@ -171,7 +132,7 @@ if __name__ == "__main__":
                     print "Client (%s, %s) connected" % addr
                     fd = sockfd.fileno()
                     if not any(ship for ship in game_state['ships'] if fd == ship['id']): # Handle multiship bug
-                        add_new_ship(fd)
+                        add_new_ship(game_state, fd)
                 else:
                     sockfd, addr = server_socket.accept()
                     sockfd.send('Too many players \n')
@@ -188,12 +149,13 @@ if __name__ == "__main__":
 
                 except Exception as e:
                     # Client disconnected or is messing with us
-                    remove_ship(sock.fileno())
-                    continue
+                    remove_ship(game_state, sock.fileno())
+                    remove_client(sock.fileno())
+
 
         UPDATE_INTERVAL = 0.02
         time.sleep(UPDATE_INTERVAL)
-        update_positions(UPDATE_INTERVAL)
+        update_positions(game_state, UPDATE_INTERVAL)
 
         broadcast_game_state()
 

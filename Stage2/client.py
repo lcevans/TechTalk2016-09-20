@@ -99,8 +99,6 @@ def render_ship(ship):
                (tip_x, tip_y),
                (right_wing_x, right_wing_y),
                (center_x, center_y)]
-    # bottom = max(polygon, key=lambda pos: pos[1])
-    # left = min(polygon, key=lambda pos: pos[0])
     rotated_polygon = utils.rotate_polygon((center_x, center_y), polygon, float(ship['ang']))
     color = ship_colors[ship['id'] % len(ship_colors)]
     pygame.gfxdraw.filled_polygon(SCREEN, rotated_polygon, color)

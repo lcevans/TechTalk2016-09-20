@@ -25,7 +25,8 @@ class Client(object):
             # Grab the entire message
             chunk = self.socket.recv(RECV_BUFFER)
             if not chunk:  # Select returns but no data ==> connection to server is dead
-                self.is_connected = False
+                print "Lost connection to server"
+                sys.exit(1)
 
             self.buf += chunk
             # Find the last valid message
