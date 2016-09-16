@@ -4,9 +4,9 @@ import os
 import pygame
 from pygame.locals import *
 import random
+import socket, select
 
 from constants import *
-from network import Client
 import utils
 from render import render_game_state
 
@@ -32,9 +32,6 @@ DEBUG_FONT = pygame.font.Font(font_path, font_size)
 GREEN = (0, 255, 0)
 IS_FULLSCREEN = False
 
-# Misc
-SHIP_SIZE = 15
-
 # Starry background
 BACKGROUND = pygame.Surface(SCREEN.get_size()).convert()
 BACKGROUND.fill((0, 0, 0))
@@ -42,6 +39,43 @@ for _ in range(100):
     pos = (random.randint(0, WIDTH), random.randint(0, HEIGHT))
     BACKGROUND.set_at(pos, (255, 255, 255))
 
+# Wrapper around socket to send and receive messages
+class Client(object):
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.buf = ""
+
+    def connect(self):
+        self.socket.connect((self.host, self.port))
+
+    def send(self, message):
+        msg = {"type": message}
+        msg = json.dumps(msg)
+        self.socket.send(msg + '\n')
+
+    def receive(self):
+        read_sockets, _, _ = select.select([self.socket], [], [], 0)  # Non-blocking
+        if read_sockets:
+            # Grab the entire message
+            chunk = self.socket.recv(4096) # buffer of 4096
+            if not chunk:  # Select returns but no data means connection is dead
+                print "Lost connection to server"
+                sys.exit(1)
+
+            self.buf += chunk
+            # Find the last valid message
+            end = self.buf.rfind("\n")
+            if end < 0:
+                return
+            start = self.buf.rfind("\n", 0, end - 1)
+            if start < 0:
+                start = 0
+            msg = self.buf[start:end]
+            # Clean up buffer
+            self.buf = self.buf[end + 1:]
+            return json.loads(msg)
 
 def toggle_debug():
     global DEBUG
