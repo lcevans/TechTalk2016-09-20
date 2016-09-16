@@ -2,13 +2,13 @@ import argparse
 import json
 import os
 import pygame
-import pygame.gfxdraw
 from pygame.locals import *
 import random
 
 from constants import *
 from network import Client
 import utils
+from render import render_game_state
 
 # Special code to center window
 os.environ['SDL_VIDEO_CENTERED'] = '1'
@@ -21,7 +21,7 @@ pygame.init()
 WINDOWS_TITLE = 'Demo'
 SCREEN = pygame.display.set_mode(RESOLUTION, DOUBLEBUF)
 pygame.display.set_caption(WINDOWS_TITLE)
-CLOCK = pygame.time.Clock()
+PYGAME_CLOCK = pygame.time.Clock()
 pygame.font.init()
 script_path = os.path.dirname(os.path.realpath(__file__))
 font_path = os.path.join(script_path, "assets/fonts/digital-7.ttf")
@@ -66,50 +66,6 @@ def toggle_fullscreen():
     SCREEN = screen
 
 
-def render_screen(game_state):
-    SCREEN.blit(BACKGROUND, (0, 0))  # clear screen
-
-    for ship in game_state['ships']:
-        render_ship(ship)
-        for shot in ship['shots']:
-            render_shot(ship['id'], shot)
-
-    if DEBUG:
-        render_debug()
-
-    # All drawing happens in a buffer
-    # This copies the buffer to the actual video memory
-    pygame.display.flip()
-
-def render_debug():
-    fps = CLOCK.get_fps()
-    msg = "FPS: %.02f" % fps
-    SCREEN.blit(DEBUG_FONT.render(msg, 1, GREEN), (WIDTH - 350, 0))
-
-def render_ship(ship):
-    # Translate between math coord and pygame coord
-    center_x, center_y = ship['x'], HEIGHT - ship['y']
-
-    # Other points defined relative to center of ship. (Will rotate later)
-    tip_x, tip_y = center_x, center_y - SHIP_SIZE
-    left_wing_x, left_wing_y = center_x - SHIP_SIZE, center_y + SHIP_SIZE
-    right_wing_x, right_wing_y = center_x + SHIP_SIZE, center_y + SHIP_SIZE
-
-    polygon = [(left_wing_x, left_wing_y),
-               (tip_x, tip_y),
-               (right_wing_x, right_wing_y),
-               (center_x, center_y)]
-    rotated_polygon = utils.rotate_polygon((center_x, center_y), polygon, float(ship['ang']))
-    color = ship_colors[ship['id'] % len(ship_colors)]
-    pygame.gfxdraw.filled_polygon(SCREEN, rotated_polygon, color)
-
-def render_shot(id, shot):
-    pos = (int(shot['x']), HEIGHT - int(shot['y']))  # Translate between math coord and pygame coord
-    color = shot_colors[id % len(shot_colors)]
-    pygame.draw.circle(SCREEN, color, pos, 2)
-
-
-
 if __name__ == '__main__':
 
     # Parse command line arguments.
@@ -141,7 +97,14 @@ if __name__ == '__main__':
 
         # only re-render when receive update
         if game_state:
-            render_screen(game_state)
+            SCREEN.blit(BACKGROUND, (0, 0))  # clear screen
+
+            render_game_state(SCREEN, game_state)
+            if DEBUG:
+                msg = "FPS: %.02f" % PYGAME_CLOCK.get_fps()
+                SCREEN.blit(DEBUG_FONT.render(msg, 1, GREEN), (WIDTH - 350, 0))
+
+            pygame.display.flip() # Copy offscreen buffer to video memory
 
         # get key presses and send to server
         keys = pygame.key.get_pressed()
@@ -167,4 +130,4 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT:
                 done = True
 
-        CLOCK.tick(60)
+        PYGAME_CLOCK.tick(60)
