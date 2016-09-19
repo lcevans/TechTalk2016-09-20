@@ -7,7 +7,6 @@ import random
 import socket, select
 
 from constants import *
-import utils
 from render import render_game_state
 
 # Special code to center window
