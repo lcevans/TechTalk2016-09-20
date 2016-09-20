@@ -5,6 +5,7 @@ import pygame
 from pygame.locals import *
 import random
 import socket, select
+import sys
 
 from constants import *
 from render import render_game_state
