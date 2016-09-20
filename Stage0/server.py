@@ -19,7 +19,7 @@ def broadcast(message, from_fd):
                 remove_client(sock.fileno())
 
 def remove_client(id):
-    print "Client %s going offline" % fd
+    print "Client %s going offline" % id
     for sock in SOCKET_LIST:
         if sock.fileno() == id:
             sock.close()
